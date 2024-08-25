@@ -1,0 +1,27 @@
+{
+  "name": "git-summit",
+  "version": "1.0.0",
+  "main": "git-summit.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "git",
+    "summit",
+    "cli",
+    "openai"
+  ],
+  "author": "Piotr Rogowski",
+  "license": "MIT",
+  "description": "",
+  "dependencies": {
+    "openai": "^4.56.0",
+    "simple-git": "^3.25.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/yargs": "^17.0.33"
+  }
+}
