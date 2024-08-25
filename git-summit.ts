@@ -15,12 +15,12 @@ enum Version {
 
 interface Options {
   changelog: string;
-  output: string;
   bump: Version;
+  output: string | null;
+  context: string;
   fun: boolean;
   emoji: boolean;
   summary: boolean;
-  context: string;
   dryRun: boolean;
 }
 
@@ -35,13 +35,18 @@ const argv = yargs(hideBin(process.argv))
   .option("output", {
     type: "string",
     describe: "Path to the output file where the release notes will be written",
-    demandOption: true,
+    demandOption: false,
+    default: null,
   })
   .option("bump", {
     type: "string",
     choices: Object.values(Version),
     describe: "The type of version bump",
     demandOption: true,
+  })
+  .option("context", {
+    type: "string",
+    describe: "Additional context for the OpenAI API",
   })
   .option("summary", {
     type: "boolean",
@@ -58,10 +63,6 @@ const argv = yargs(hideBin(process.argv))
     describe: "Include emojis in the content",
     default: false,
   })
-  .option("context", {
-    type: "string",
-    describe: "Additional context for the OpenAI API",
-  })
   .option("dry-run", {
     type: "boolean",
     describe: "Run the script without making any changes",
@@ -76,26 +77,28 @@ main(
   argv.changelog,
   argv.output,
   argv.bump,
+  argv.context,
   argv.fun,
   argv.emoji,
   argv.summary,
-  argv.context,
   argv.dryRun
 );
 
 async function main(
   changelogPathArg: string,
-  outputPathArg: string,
+  outputPathArg: string | null,
   versionArg: string,
+  context: string,
   fun: boolean,
   emojis: boolean,
   summary: boolean,
-  context: string,
   dryRun: boolean
 ) {
   const openAIKey = process.env.OPENAI_API_KEY;
   const changelogPath = path.join(process.cwd(), changelogPathArg);
-  const outputPath = path.join(process.cwd(), outputPathArg);
+  const outputPath = outputPathArg
+    ? path.join(process.cwd(), outputPathArg)
+    : null;
 
   if (!openAIKey) {
     console.error(
@@ -120,12 +123,12 @@ async function main(
       console.log("📝 Current release notes:\n", summary);
     }
 
-    writeCurrentRelease(summary);
+    if (outputPath) {
+      writeCurrentRelease(summary);
+    }
     updateChangelog(summary);
 
-    console.log(
-      `✅ Changelog updated and current release notes written to: \n${outputPath}\n${changelogPath}`
-    );
+    console.log("✅ All done!");
   } catch (error) {
     console.error("❌ Error updating changelog:", error);
   }
@@ -218,6 +221,6 @@ async function main(
 
   // Write the current release notes to current_release.md
   function writeCurrentRelease(newEntry: string): void {
-    fs.writeFileSync(outputPath, newEntry, "utf-8");
+    fs.writeFileSync(outputPath!, newEntry, "utf-8");
   }
 }
