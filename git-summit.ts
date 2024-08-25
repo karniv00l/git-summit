@@ -120,13 +120,11 @@ async function main(
 
     if (dryRun) {
       console.log("🔍 Dry run enabled. Skipping file writes.");
-      console.log("📝 Current release notes:\n", summary);
-    }
-
-    if (outputPath) {
+      console.log("📝 Current release notes:\n\n", summary, "\n");
+    } else {
       writeCurrentRelease(summary);
+      updateChangelog(summary);
     }
-    updateChangelog(summary);
 
     console.log("✅ All done!");
   } catch (error) {
@@ -221,6 +219,10 @@ async function main(
 
   // Write the current release notes to current_release.md
   function writeCurrentRelease(newEntry: string): void {
-    fs.writeFileSync(outputPath!, newEntry, "utf-8");
+    if (!outputPath) {
+      return;
+    }
+
+    fs.writeFileSync(outputPath, newEntry, "utf-8");
   }
 }
