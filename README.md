@@ -55,5 +55,12 @@ Let GitSummit work its magic: ✨
 - Your freshly minted release notes will land in `RELEASE.md`, while `CHANGELOG.md` will be updated like clockwork. 🕒
 
 ```bash
-npx ts-node ./git-summit/git-summit.ts --changelog CHANGELOG.md --output RELEASE.md --bump minor --fun --emoji --dry-run --context "Company name is Acme Inc., app name is SuperApp"
+npx ts-node ./git-summit/git-summit.ts
+  --changelog CHANGELOG.md \
+  --output RELEASE.md \
+  --bump minor \
+  --fun \
+  --emoji \
+  --dry-run \
+  --context "Company name is Acme Inc., app name is SuperApp"
 ```

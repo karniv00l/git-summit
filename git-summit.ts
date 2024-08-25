@@ -14,7 +14,7 @@ enum Version {
 }
 
 interface Options {
-  changelog: string;
+  changelog: string | null;
   bump: Version;
   output: string | null;
   context: string;
@@ -30,7 +30,7 @@ const argv = yargs(hideBin(process.argv))
   .option("changelog", {
     type: "string",
     describe: "Path to the CHANGELOG.md file",
-    demandOption: true,
+    demandOption: false,
   })
   .option("output", {
     type: "string",
@@ -85,7 +85,7 @@ main(
 );
 
 async function main(
-  changelogPathArg: string,
+  changelogPathArg: string | null,
   outputPathArg: string | null,
   versionArg: string,
   context: string,
@@ -95,7 +95,9 @@ async function main(
   dryRun: boolean
 ) {
   const openAIKey = process.env.OPENAI_API_KEY;
-  const changelogPath = path.join(process.cwd(), changelogPathArg);
+  const changelogPath = changelogPathArg
+    ? path.join(process.cwd(), changelogPathArg)
+    : null;
   const outputPath = outputPathArg
     ? path.join(process.cwd(), outputPathArg)
     : null;
@@ -204,6 +206,10 @@ async function main(
 
   // Update CHANGELOG.md
   function updateChangelog(newEntry: string): void {
+    if (!changelogPath) {
+      return;
+    }
+
     let changelog = "";
     if (fs.existsSync(changelogPath)) {
       changelog = fs.readFileSync(changelogPath, "utf-8");
