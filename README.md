@@ -61,6 +61,7 @@ npx ts-node ./git-summit/git-summit.ts
   --bump minor \
   --fun \
   --emoji \
+  --summary \
   --dry-run \
   --context "Company name is Acme Inc., app name is SuperApp"
 ```
