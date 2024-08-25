@@ -17,7 +17,6 @@
   "dependencies": {
     "openai": "^4.56.0",
     "simple-git": "^3.25.0",
-    "ts-node": "^10.9.2",
     "typescript": "^5.5.4",
     "yargs": "^17.7.2"
   },
