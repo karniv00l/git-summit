@@ -16,11 +16,13 @@
   "description": "",
   "dependencies": {
     "openai": "^4.56.0",
+    "semver": "^7.6.3",
     "simple-git": "^3.25.0",
     "typescript": "^5.5.4",
     "yargs": "^17.7.2"
   },
   "devDependencies": {
+    "@types/semver": "^7.5.8",
     "@types/yargs": "^17.0.33"
   }
 }

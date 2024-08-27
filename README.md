@@ -51,7 +51,7 @@ Now you’re ready to roll! 🎉
 
 Let GitSummit work its magic: ✨
 
-- It will look at the latest git **tag** (`v0.0.1` format) and whip up some dazzling release notes for everything that’s happened since. 🌟
+- It will look at the latest git **tag** (must be in proper semver format) and whip up some dazzling release notes for everything that’s happened since. 🌟
 - Your freshly minted release notes will land in `RELEASE.md`, while `CHANGELOG.md` will be updated like clockwork. 🕒
 
 ```bash

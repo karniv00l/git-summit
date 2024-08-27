@@ -4,18 +4,23 @@ import simpleGit from "simple-git";
 import OpenAI from "openai";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import semver from "semver";
 
 const git = simpleGit();
 
-enum Version {
-  Major = "major",
-  Minor = "minor",
-  Patch = "patch",
+enum ReleaseType {
+  major = "major",
+  premajor = "premajor",
+  minor = "minor",
+  preminor = "preminor",
+  patch = "patch",
+  prepatch = "prepatch",
+  prerelease = "prerelease",
 }
 
 interface Options {
   changelog: string | null;
-  bump: Version;
+  bump: ReleaseType;
   output: string | null;
   context: string;
   fun: boolean;
@@ -40,7 +45,7 @@ const argv = yargs(hideBin(process.argv))
   })
   .option("bump", {
     type: "string",
-    choices: Object.values(Version),
+    choices: Object.values(ReleaseType),
     describe: "The type of version bump",
     demandOption: true,
   })
@@ -87,7 +92,7 @@ main(
 async function main(
   changelogPathArg: string | null,
   outputPathArg: string | null,
-  versionArg: string,
+  bumpArg: string,
   context: string,
   fun: boolean,
   emojis: boolean,
@@ -112,7 +117,7 @@ async function main(
   try {
     const latestTag = await getLatestTag();
     const commits = await getCommitsSinceLastTag(latestTag);
-    const newVersion = getNewVersion(versionArg as Version, latestTag);
+    const newVersion = getNewVersion(bumpArg as ReleaseType, latestTag);
 
     console.log("⬆️ Bumping version: ", latestTag, " => ", newVersion);
     console.log("📋 Commits since last tag:", commits);
@@ -134,26 +139,13 @@ async function main(
   }
 
   // Get the new version based on the versionArg and latestTag
-  function getNewVersion(version: Version, latestTag: string): string {
-    const newVersion = latestTag.replace(
-      /v(\d+\.\d+\.\d+)/,
-      (match, current) => {
-        const [major, minor, patch] = current.split(".").map(Number);
+  function getNewVersion(releaseType: ReleaseType, latestTag: string): string {
+    const parsed = semver.parse(latestTag);
+    if (!parsed) {
+      throw new Error("Invalid semver version: " + latestTag);
+    }
 
-        switch (version) {
-          case Version.Major:
-            return `v${major + 1}.0.0`;
-          case Version.Minor:
-            return `v${major}.${minor + 1}.0`;
-          case Version.Patch:
-            return `v${major}.${minor}.${patch + 1}`;
-          default:
-            return match;
-        }
-      }
-    );
-
-    return newVersion;
+    return parsed.inc(releaseType).format();
   }
 
   // Get the latest tag
@@ -181,7 +173,7 @@ async function main(
     Make sure to adhere to https://keepachangelog.com/en/1.0.0/.
     Create only "New Features", "Improvements", "Bug Fixes" and "Additional Notes" sections if needed.
     ${summary ? "Add summary of the changes at the top." : ""}
-    Avoid exposing sensitive information. Make it concise and easy to understand.
+    Avoid exposing sensitive information. Make it concise and easy to understand. Don't include information about PRs or issues.
     The release notes should be suitable for a public audience as they will be included in the app's release notes.
     ${
       fun &&

@@ -11,5 +11,12 @@
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "cSpell.words": ["openai", "Piotr", "Rogowski"]
+  "cSpell.words": [
+    "openai",
+    "Piotr",
+    "premajor",
+    "preminor",
+    "prepatch",
+    "Rogowski"
+  ]
 }
