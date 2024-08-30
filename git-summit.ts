@@ -22,7 +22,8 @@ interface Options {
   changelog: string | null;
   bump: ReleaseType;
   output: string | null;
-  context: string;
+  context: string | null;
+  sinceTag: string | null;
   fun: boolean;
   emoji: boolean;
   summary: boolean;
@@ -52,6 +53,12 @@ const argv = yargs(hideBin(process.argv))
   .option("context", {
     type: "string",
     describe: "Additional context for the OpenAI API",
+    default: null,
+  })
+  .option("since-tag", {
+    type: "string",
+    describe: "The tag to start from when generating release notes",
+    default: null,
   })
   .option("summary", {
     type: "boolean",
@@ -83,6 +90,7 @@ main(
   argv.output,
   argv.bump,
   argv.context,
+  argv.sinceTag,
   argv.fun,
   argv.emoji,
   argv.summary,
@@ -93,7 +101,8 @@ async function main(
   changelogPathArg: string | null,
   outputPathArg: string | null,
   bumpArg: string,
-  context: string,
+  context: string | null,
+  sinceTag: string | null,
   fun: boolean,
   emojis: boolean,
   summary: boolean,
@@ -116,11 +125,12 @@ async function main(
 
   try {
     const latestTag = await getLatestTag();
-    const commits = await getCommitsSinceLastTag(latestTag);
+    const since = sinceTag ? await getSinceTag(sinceTag) : latestTag;
+    const commits = await getCommitsSinceTag(since);
     const newVersion = getNewVersion(bumpArg as ReleaseType, latestTag);
 
-    console.log("⬆️ Bumping version: ", latestTag, " => ", newVersion);
-    console.log("📋 Commits since last tag:", commits);
+    console.log("⬆️ Bumping version: ", since, " => ", newVersion);
+    console.log(`📋 Commits since tag "${since}":`, commits);
 
     console.log("🤖 Waiting for OpenAI to summarize the commits...");
     const summary = await summarizeCommits(commits, newVersion);
@@ -138,11 +148,11 @@ async function main(
     console.error("❌ Error updating changelog:", error);
   }
 
-  // Get the new version based on the versionArg and latestTag
-  function getNewVersion(releaseType: ReleaseType, latestTag: string): string {
-    const parsed = semver.parse(latestTag);
+  // Get the new version based on the versionArg and since
+  function getNewVersion(releaseType: ReleaseType, since: string): string {
+    const parsed = semver.parse(since);
     if (!parsed) {
-      throw new Error("Invalid semver version: " + latestTag);
+      throw new Error("Invalid semver version: " + since);
     }
 
     return parsed.inc(releaseType).format();
@@ -151,11 +161,32 @@ async function main(
   // Get the latest tag
   async function getLatestTag(): Promise<string> {
     const tags = await git.tags();
-    return tags.latest || "";
+
+    if (tags.all.length === 0) {
+      throw new Error("No tags found in the repository.");
+    }
+
+    return tags.latest ?? "";
+  }
+
+  // Get commits from the given tag
+  async function getSinceTag(since: string): Promise<string> {
+    const tags = await git.tags();
+
+    if (tags.all.length === 0) {
+      throw new Error("No tags found in the repository.");
+    }
+
+    const sinceTag = tags.all.find((tag) => tag === since);
+    if (!sinceTag) {
+      throw new Error("Tag not found: " + since);
+    }
+
+    return sinceTag;
   }
 
   // Get commits from the last tag
-  async function getCommitsSinceLastTag(tag: string): Promise<string[]> {
+  async function getCommitsSinceTag(tag: string): Promise<string[]> {
     const log = await git.log({ from: tag, to: "HEAD" });
     return log.all.map((commit) => commit.message);
   }
