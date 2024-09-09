@@ -15,7 +15,7 @@
   "license": "MIT",
   "description": "",
   "dependencies": {
-    "openai": "^4.56.0",
+    "openai": "^4.58.1",
     "semver": "^7.6.3",
     "simple-git": "^3.25.0",
     "typescript": "^5.5.4",
