@@ -30,6 +30,7 @@ interface Options {
   emoji: boolean;
   summary: boolean;
   dryRun: boolean;
+  model: string;
 }
 
 // Parse CLI arguments and options using yargs
@@ -91,6 +92,11 @@ const argv = yargs(hideBin(process.argv))
     describe: "Run the script without making any changes",
     default: false,
   })
+  .option("model", {
+    type: "string",
+    describe: "The OpenAI model to use for summarization",
+    default: "gpt-4o",
+  })
   .check((argv) => {
     if (argv.toTag) {
       if (argv.bump || argv.releaseVersion) {
@@ -128,7 +134,8 @@ main(
   argv.fun,
   argv.emoji,
   argv.summary,
-  argv.dryRun
+  argv.dryRun,
+  argv.model
 );
 
 async function main(
@@ -142,7 +149,8 @@ async function main(
   fun: boolean,
   emojis: boolean,
   summary: boolean,
-  dryRun: boolean
+  dryRun: boolean,
+  model: string
 ) {
   const openAIKey = process.env.OPENAI_API_KEY;
   const changelogPath = changelogPathArg
@@ -186,7 +194,7 @@ async function main(
     );
 
     console.log("🤖 Waiting for OpenAI to summarize the commits...");
-    const releaseSummary = await summarizeCommits(commits, newVersion);
+    const releaseSummary = await summarizeCommits(commits, newVersion, model);
 
     if (dryRun) {
       console.log("🔍 Dry run enabled. Skipping file writes.");
@@ -248,7 +256,11 @@ async function main(
   }
 
   // Summarize commits using OpenAI
-  async function summarizeCommits(commits: string[], newVersion: string) {
+  async function summarizeCommits(
+    commits: string[],
+    newVersion: string,
+    model: string
+  ) {
     const openai = new OpenAI({
       apiKey: openAIKey,
     });
@@ -276,7 +288,7 @@ async function main(
     `;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model,
       messages: [{ role: "user", content: prompt }],
     });
 
