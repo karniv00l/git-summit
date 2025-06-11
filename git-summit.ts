@@ -50,7 +50,6 @@ const argv = yargs(hideBin(process.argv))
     type: "string",
     choices: Object.values(ReleaseType),
     describe: "The type of version bump",
-    default: null,
   })
   .option("release-version", {
     type: "string",
