@@ -20,8 +20,10 @@ enum ReleaseType {
 
 interface Options {
   changelog: string | null;
-  bump: ReleaseType;
+  bump: ReleaseType | null;
   output: string | null;
+  version: string | null;
+  toTag: string | null;
   context: string | null;
   sinceTag: string | null;
   fun: boolean;
@@ -48,7 +50,17 @@ const argv = yargs(hideBin(process.argv))
     type: "string",
     choices: Object.values(ReleaseType),
     describe: "The type of version bump",
-    demandOption: true,
+    default: null,
+  })
+  .option("version", {
+    type: "string",
+    describe: "The new version string",
+    default: null,
+  })
+  .option("to-tag", {
+    type: "string",
+    describe: "The tag to end at when generating release notes",
+    default: null,
   })
   .option("context", {
     type: "string",
@@ -80,6 +92,17 @@ const argv = yargs(hideBin(process.argv))
     describe: "Run the script without making any changes",
     default: false,
   })
+  .check((argv) => {
+    if (!argv.version && !argv.bump) {
+      throw new Error("❌ You must provide either --version or --bump.");
+    }
+    if (argv.version && argv.bump) {
+      throw new Error(
+        "❌ You cannot use --version and --bump at the same time."
+      );
+    }
+    return true;
+  })
   .demandCommand(0) // Ensure at least one command is passed
   .help()
   .parseSync() as Options; // Parse the arguments and cast them to the Options interface
@@ -89,6 +112,8 @@ main(
   argv.changelog,
   argv.output,
   argv.bump,
+  argv.version,
+  argv.toTag,
   argv.context,
   argv.sinceTag,
   argv.fun,
@@ -100,7 +125,9 @@ main(
 async function main(
   changelogPathArg: string | null,
   outputPathArg: string | null,
-  bumpArg: string,
+  bumpArg: ReleaseType | null,
+  versionArg: string | null,
+  toTagArg: string | null,
   context: string | null,
   sinceTag: string | null,
   fun: boolean,
@@ -126,21 +153,36 @@ async function main(
   try {
     const latestTag = await getLatestTag();
     const since = sinceTag ? await getSinceTag(sinceTag) : latestTag;
-    const commits = await getCommitsSinceTag(since);
-    const newVersion = getNewVersion(bumpArg as ReleaseType, latestTag);
+    const commits = await getCommitsSinceTag(since, toTagArg);
+    let newVersion: string;
 
-    console.log("⬆️ Bumping version: ", since, " => ", newVersion);
-    console.log(`📋 Commits since tag "${since}":`, commits);
+    if (versionArg) {
+      newVersion = versionArg;
+    } else if (bumpArg) {
+      newVersion = getNewVersion(bumpArg, latestTag);
+    } else {
+      // This path should be unreachable due to the yargs check
+      console.error(
+        "❌ Something went wrong. Either bump or version should be provided."
+      );
+      return;
+    }
+
+    console.log("⬆️  New version: ", newVersion);
+    console.log(
+      `📋 Commits from "${since}" to "${toTagArg ?? "HEAD"}":`,
+      commits.length
+    );
 
     console.log("🤖 Waiting for OpenAI to summarize the commits...");
-    const summary = await summarizeCommits(commits, newVersion);
+    const releaseSummary = await summarizeCommits(commits, newVersion);
 
     if (dryRun) {
       console.log("🔍 Dry run enabled. Skipping file writes.");
-      console.log("📝 Current release notes:\n\n", summary, "\n");
+      console.log("📝 Current release notes:\n\n", releaseSummary, "\n");
     } else {
-      writeCurrentRelease(summary);
-      updateChangelog(summary);
+      writeCurrentRelease(releaseSummary);
+      updateChangelog(releaseSummary);
     }
 
     console.log("✅ All done!");
@@ -186,8 +228,11 @@ async function main(
   }
 
   // Get commits from the last tag
-  async function getCommitsSinceTag(tag: string): Promise<string[]> {
-    const log = await git.log({ from: tag, to: "HEAD" });
+  async function getCommitsSinceTag(
+    from: string,
+    to: string | null
+  ): Promise<string[]> {
+    const log = await git.log({ from, to: to ?? "HEAD" });
     return log.all.map((commit) => commit.message);
   }
 
