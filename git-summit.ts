@@ -93,15 +93,23 @@ const argv = yargs(hideBin(process.argv))
     default: false,
   })
   .check((argv) => {
-    if (!argv.releaseVersion && !argv.bump) {
-      throw new Error(
-        "❌ You must provide either --release-version or --bump."
-      );
-    }
-    if (argv.releaseVersion && argv.bump) {
-      throw new Error(
-        "❌ You cannot use --release-version and --bump at the same time."
-      );
+    if (argv.toTag) {
+      if (argv.bump || argv.releaseVersion) {
+        throw new Error(
+          "❌ --bump and --release-version cannot be used with --to-tag."
+        );
+      }
+    } else {
+      if (!argv.bump && !argv.releaseVersion) {
+        throw new Error(
+          "❌ You must provide either --bump or --release-version."
+        );
+      }
+      if (argv.bump && argv.releaseVersion) {
+        throw new Error(
+          "❌ You cannot use --bump and --release-version at the same time."
+        );
+      }
     }
     return true;
   })
@@ -158,14 +166,16 @@ async function main(
     const commits = await getCommitsSinceTag(since, toTagArg);
     let newVersion: string;
 
-    if (releaseVersionArg) {
+    if (toTagArg) {
+      newVersion = toTagArg;
+    } else if (releaseVersionArg) {
       newVersion = releaseVersionArg;
     } else if (bumpArg) {
       newVersion = getNewVersion(bumpArg, since);
     } else {
       // This path should be unreachable due to the yargs check
       console.error(
-        "❌ Something went wrong. Either bump or version should be provided."
+        "❌ Something went wrong. Unable to determine the new version."
       );
       return;
     }
