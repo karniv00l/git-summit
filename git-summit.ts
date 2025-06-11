@@ -22,7 +22,7 @@ interface Options {
   changelog: string | null;
   bump: ReleaseType | null;
   output: string | null;
-  version: string | null;
+  releaseVersion: string | null;
   toTag: string | null;
   context: string | null;
   sinceTag: string | null;
@@ -52,7 +52,7 @@ const argv = yargs(hideBin(process.argv))
     describe: "The type of version bump",
     default: null,
   })
-  .option("version", {
+  .option("release-version", {
     type: "string",
     describe: "The new version string",
     default: null,
@@ -93,12 +93,14 @@ const argv = yargs(hideBin(process.argv))
     default: false,
   })
   .check((argv) => {
-    if (!argv.version && !argv.bump) {
-      throw new Error("❌ You must provide either --version or --bump.");
-    }
-    if (argv.version && argv.bump) {
+    if (!argv.releaseVersion && !argv.bump) {
       throw new Error(
-        "❌ You cannot use --version and --bump at the same time."
+        "❌ You must provide either --release-version or --bump."
+      );
+    }
+    if (argv.releaseVersion && argv.bump) {
+      throw new Error(
+        "❌ You cannot use --release-version and --bump at the same time."
       );
     }
     return true;
@@ -112,7 +114,7 @@ main(
   argv.changelog,
   argv.output,
   argv.bump,
-  argv.version,
+  argv.releaseVersion,
   argv.toTag,
   argv.context,
   argv.sinceTag,
@@ -126,7 +128,7 @@ async function main(
   changelogPathArg: string | null,
   outputPathArg: string | null,
   bumpArg: ReleaseType | null,
-  versionArg: string | null,
+  releaseVersionArg: string | null,
   toTagArg: string | null,
   context: string | null,
   sinceTag: string | null,
@@ -156,10 +158,10 @@ async function main(
     const commits = await getCommitsSinceTag(since, toTagArg);
     let newVersion: string;
 
-    if (versionArg) {
-      newVersion = versionArg;
+    if (releaseVersionArg) {
+      newVersion = releaseVersionArg;
     } else if (bumpArg) {
-      newVersion = getNewVersion(bumpArg, latestTag);
+      newVersion = getNewVersion(bumpArg, since);
     } else {
       // This path should be unreachable due to the yargs check
       console.error(
